@@ -1,0 +1,48 @@
+{
+    "name": "ss-ipg/laravel-auditable",
+    "description": "Declarative model audit logging for Laravel using PHP attributes",
+    "keywords": ["laravel", "audit", "logging", "eloquent", "model"],
+    "license": "MIT",
+    "authors": [
+      {
+        "name": "Contributors",
+        "homepage": "https://github.com/ss-ipg/laravel-auditable/graphs/contributors"
+      }
+    ],
+    "require": {
+        "php": "^8.3",
+        "illuminate/contracts": "^11.0|^12.0",
+        "illuminate/database": "^11.0|^12.0",
+        "illuminate/log": "^11.0|^12.0",
+        "illuminate/support": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.8",
+        "laravel/pint": "^1.27",
+        "orchestra/testbench": "^9.0|^10.0",
+        "phpunit/phpunit": "^11.0",
+        "roave/security-advisories": "dev-latest"
+    },
+    "autoload": {
+        "psr-4": {
+            "SSIPG\\Auditable\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SSIPG\\Auditable\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "SSIPG\\Auditable\\AuditableServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
