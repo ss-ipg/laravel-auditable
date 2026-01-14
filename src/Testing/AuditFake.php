@@ -148,4 +148,24 @@ class AuditFake extends AuditLogger
             'changes'  => $changes,
         ];
     }
+
+    protected function shouldLog(): bool
+    {
+        if (! config('auditable.enabled', false)) {
+            return false;
+        }
+
+        $environments = config('auditable.environments', []);
+
+        if ($environments === ['*']) {
+            return true;
+        }
+
+        // Default to testing environment when none are configured
+        if (empty($environments)) {
+            $environments = ['testing'];
+        }
+
+        return app()->environment($environments);
+    }
 }
