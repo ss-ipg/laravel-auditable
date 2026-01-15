@@ -22,6 +22,11 @@ class Audit extends Facade
 {
     public static function fake(): AuditFake
     {
+        config([
+            'auditable.enabled'      => true,
+            'auditable.environments' => ['testing'],
+        ]);
+
         static::swap($fake = new AuditFake);
 
         return $fake;
