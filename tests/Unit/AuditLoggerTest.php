@@ -53,6 +53,19 @@ class AuditLoggerTest extends TestCase
         Audit::assertNotLogged(AuditAction::Updated);
     }
 
+    public function test_clear(): void
+    {
+        TestModel::create(['name' => 'John']);
+
+        Audit::assertLoggedCount(1);
+        Audit::clear();
+        Audit::assertNothingLogged();
+
+        TestModel::create(['name' => 'Jane']);
+
+        Audit::assertLoggedCount(1);
+    }
+
     public function test_columns_option(): void
     {
         TestModelWithColumns::create([
@@ -140,6 +153,53 @@ class AuditLoggerTest extends TestCase
         );
     }
 
+    public function test_fake_all(): void
+    {
+        Audit::fake();
+
+        TestModel::create(['name' => 'John']);
+        TestModelWithColumns::create(['name' => 'Jane', 'email' => 'jane@example.com', 'status' => 'active']);
+        TestModelWithRedaction::create(['name' => 'Bob', 'password' => 'secret']);
+
+        Audit::assertLoggedCount(3);
+    }
+
+    public function test_fake_multiple_models(): void
+    {
+        Audit::fake([TestModel::class, TestModelWithColumns::class]);
+
+        TestModel::create(['name' => 'John']);
+        TestModelWithColumns::create(['name' => 'Jane', 'email' => 'jane@example.com', 'status' => 'active']);
+        TestModelWithRedaction::create(['name' => 'Bob', 'password' => 'secret']);
+
+        Audit::assertLoggedCount(2);
+
+        Audit::assertLogged(
+            action: AuditAction::Created,
+            callback: static fn (array $entry) => $entry['model'] === TestModel::class
+        );
+
+        Audit::assertLogged(
+            action: AuditAction::Created,
+            callback: static fn (array $entry) => $entry['model'] === TestModelWithColumns::class
+        );
+    }
+
+    public function test_fake_single_model(): void
+    {
+        Audit::fake(TestModel::class);
+
+        TestModel::create(['name' => 'John']);
+        TestModelWithColumns::create(['name' => 'Jane', 'email' => 'jane@example.com', 'status' => 'active']);
+
+        Audit::assertLoggedCount(1);
+
+        Audit::assertLogged(
+            action: AuditAction::Created,
+            callback: static fn (array $entry) => $entry['model'] === TestModel::class
+        );
+    }
+
     public function test_hard_delete_on_soft_delete_model(): void
     {
         $model = TestModelWithSoftDeletes::create(['name' => 'John']);
@@ -172,6 +232,30 @@ class AuditLoggerTest extends TestCase
         // Should only have the Created log, no Updated (same value after decode)
         Audit::assertLoggedCount(1);
         Audit::assertNotLogged(AuditAction::Updated);
+    }
+
+    public function test_logged(): void
+    {
+        $model = TestModel::create(['name' => 'John']);
+        $model->update(['name' => 'Jane']);
+
+        TestModelWithColumns::create(['name' => 'Bob', 'email' => 'bob@example.com', 'status' => 'active']);
+
+        // No filters - all entries
+        $this->assertCount(3, Audit::logged());
+
+        // Filter by model only
+        $this->assertCount(2, Audit::logged(model: TestModel::class));
+        $this->assertCount(1, Audit::logged(model: TestModelWithColumns::class));
+
+        // Filter by action only
+        $this->assertCount(2, Audit::logged(action: AuditAction::Created));
+        $this->assertCount(1, Audit::logged(action: AuditAction::Updated));
+
+        // Filter by both
+        $this->assertCount(1, Audit::logged(action: AuditAction::Created, model: TestModel::class));
+        $this->assertCount(1, Audit::logged(action: AuditAction::Updated, model: TestModel::class));
+        $this->assertCount(0, Audit::logged(action: AuditAction::Updated, model: TestModelWithColumns::class));
     }
 
     public function test_multiple_models_with_different_configs(): void
