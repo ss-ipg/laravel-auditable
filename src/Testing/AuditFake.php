@@ -14,6 +14,25 @@ class AuditFake extends AuditLogger
     /** @var list<array<string, mixed>> */
     protected array $entries = [];
 
+    /** @var list<class-string<Model>>|null */
+    protected ?array $fakeModels = null;
+
+    /** @param list<class-string<Model>>|null $fakeModels */
+    public function __construct(?array $fakeModels = null)
+    {
+        $this->fakeModels = $fakeModels;
+    }
+
+    /**
+     * Get all captured audit entries.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function all(): array
+    {
+        return $this->entries;
+    }
+
     /**
      * Assert that an audit entry was logged.
      *
@@ -69,6 +88,12 @@ class AuditFake extends AuditLogger
         Assert::assertEmpty($this->entries, 'Unexpected audit entries were logged.');
     }
 
+    /** Clear all captured audit entries. */
+    public function clear(): void
+    {
+        $this->entries = [];
+    }
+
     /** @param array{0: Model} $data */
     public function handleCreated(string $event, array $data): void
     {
@@ -98,24 +123,33 @@ class AuditFake extends AuditLogger
     }
 
     /**
-     * Get all logged entries, optionally filtered by action.
+     * Get logged entries, optionally filtered by action and/or model.
      *
+     * @param  class-string<Model>|null  $model
      * @return list<array<string, mixed>>
      */
-    public function logged(?AuditAction $action = null): array
+    public function logged(?AuditAction $action = null, ?string $model = null): array
     {
-        if ($action === null) {
-            return $this->entries;
+        $entries = $this->entries;
+
+        if ($action !== null) {
+            $entries = array_filter($entries, static fn (array $entry) => $entry['action'] === $action->value);
         }
 
-        return array_values(
-            array_filter($this->entries, static fn (array $entry) => $entry['action'] === $action)
-        );
+        if ($model !== null) {
+            $entries = array_filter($entries, static fn (array $entry) => $entry['model'] === $model);
+        }
+
+        return array_values($entries);
     }
 
     protected function capture(AuditAction $action, Model $model): void
     {
         if (! $this->shouldLog()) {
+            return;
+        }
+
+        if ($this->fakeModels !== null && ! in_array($model::class, $this->fakeModels, true)) {
             return;
         }
 
@@ -141,11 +175,6 @@ class AuditFake extends AuditLogger
             return;
         }
 
-        $this->entries[] = [
-            'action'   => $action,
-            'model'    => $model::class,
-            'model_id' => $model->getKey(),
-            'changes'  => $changes,
-        ];
+        $this->entries[] = $this->buildPayload($action, $model, $changes);
     }
 }

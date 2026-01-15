@@ -53,6 +53,38 @@ class AuditLogger
     }
 
     /**
+     * Build the complete audit payload.
+     *
+     * @param  array<string, mixed>  $changes
+     * @return array<string, mixed>
+     */
+    protected function buildPayload(AuditAction $action, Model $model, array $changes): array
+    {
+        $payload = [
+            'action'    => $action->value,
+            'context'   => app()->runningInConsole() ? 'cli' : 'web',
+            'model'     => $model::class,
+            'model_id'  => $model->getKey(),
+            'user_id'   => auth()->id(),
+            'ip'        => request()->ip(),
+            'timestamp' => now()->toIso8601String(),
+        ];
+
+        // Collect context from all registered providers, then merge once
+        $additionalContext = [];
+
+        foreach ($this->getContextProviders() as $provider) {
+            $additionalContext[] = $provider->getContext($model, $action);
+        }
+
+        if ($additionalContext) {
+            $payload = array_merge($payload, ...$additionalContext);
+        }
+
+        return array_merge($payload, ['changes' => $changes]);
+    }
+
+    /**
      * Cast a value according to the model's cast type.
      *
      * @throws JsonException
@@ -240,28 +272,7 @@ class AuditLogger
             return;
         }
 
-        $payload = [
-            'action'    => $action->value,
-            'context'   => app()->runningInConsole() ? 'cli' : 'web',
-            'model'     => $model::class,
-            'model_id'  => $model->getKey(),
-            'user_id'   => auth()->id(),
-            'ip'        => request()->ip(),
-            'timestamp' => now()->toIso8601String(),
-        ];
-
-        // Collect context from all registered providers, then merge once
-        $additionalContext = [];
-
-        foreach ($this->getContextProviders() as $provider) {
-            $additionalContext[] = $provider->getContext($model, $action);
-        }
-
-        if ($additionalContext) {
-            $payload = array_merge($payload, ...$additionalContext);
-        }
-
-        $this->writeLog(array_merge($payload, ['changes' => $changes]));
+        $this->writeLog($this->buildPayload($action, $model, $changes));
     }
 
     /**
