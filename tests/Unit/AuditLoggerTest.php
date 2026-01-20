@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace SSIPG\Auditable\Tests\Unit;
 
+use Illuminate\Support\Facades\Log;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
+use SSIPG\Auditable\AuditLogger;
 use SSIPG\Auditable\Enums\AuditAction;
 use SSIPG\Auditable\Facades\Audit;
 use SSIPG\Auditable\Tests\Fixtures\Models\TestModel;
@@ -362,6 +366,45 @@ class AuditLoggerTest extends TestCase
             action: AuditAction::Restored,
             callback: static fn ($entry) => $entry['changes']['id'] === $model->id
         );
+    }
+
+    public function test_single_line_disabled(): void
+    {
+        $this->app?->singleton(AuditLogger::class);
+
+        config(['auditable.single_line' => false]);
+
+        $handler = new TestHandler;
+        $logger = new Logger('audit', [$handler]);
+
+        Log::shouldReceive('channel')->with('audit')->andReturn($logger);
+
+        TestModel::create(['name' => "Line1\nLine2"]);
+
+        $records = $handler->getRecords();
+
+        // JSON escape sequences should be preserved (not replaced with spaces)
+        /** @phpstan-ignore cast.string */
+        $this->assertStringContainsString('Line1\nLine2', (string) $records[0]['message']);
+        $this->assertCount(1, $records);
+    }
+
+    public function test_single_line_enabled(): void
+    {
+        $this->app?->singleton(AuditLogger::class);
+
+        $handler = new TestHandler;
+        $logger = new Logger('audit', [$handler]);
+
+        Log::shouldReceive('channel')->with('audit')->andReturn($logger);
+
+        TestModel::create(['name' => "Line1\nLine2\r\nLine3"]);
+
+        $records = $handler->getRecords();
+
+        /** @phpstan-ignore cast.string */
+        $this->assertStringContainsString('Line1 Line2 Line3', (string) $records[0]['message']);
+        $this->assertCount(1, $records);
     }
 
     public function test_soft_deleted_event(): void

@@ -68,6 +68,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Single Line Output
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, newlines in audit log entries are replaced with spaces,
+    | ensuring each audit entry is a single line. This is useful for log
+    | aggregation systems.
+    |
+    | When disabled, newlines in field values are preserved as-is.
+    |
+    */
+    'single_line' => true,
+
+    /*
+    |--------------------------------------------------------------------------
     | Formatter
     |--------------------------------------------------------------------------
     |

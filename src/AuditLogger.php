@@ -318,8 +318,14 @@ class AuditLogger
         rescue(function () use ($payload) {
             $formatter = $this->getFormatter();
             $channel = config('auditable.channel', 'audit');
+            $output = $formatter->format($payload);
 
-            Log::channel($channel)->info($formatter->format($payload));
+            if (config('auditable.single_line', true)) {
+                // Replace newlines with spaces for clean, single-line output
+                $output = str_replace(["\r\n", "\r", "\n", '\r\n', '\r', '\n'], ' ', $output);
+            }
+
+            Log::channel($channel)->info($output);
         }, report: false);
     }
 }
