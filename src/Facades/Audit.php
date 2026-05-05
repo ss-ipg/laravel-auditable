@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SSIPG\Auditable\Facades;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Facade;
 use SSIPG\Auditable\AuditLogger;
 use SSIPG\Auditable\Testing\AuditFake;
@@ -17,12 +18,12 @@ use SSIPG\Auditable\Testing\AuditFake;
  * @method static void clear()
  * @method static array<string, mixed>[] logged(\SSIPG\Auditable\Enums\AuditAction|null $action = null, string|null $model = null)
  *
- * @see \SSIPG\Auditable\AuditLogger
- * @see \SSIPG\Auditable\Testing\AuditFake
+ * @see AuditLogger
+ * @see AuditFake
  */
 class Audit extends Facade
 {
-    /** @param  class-string<\Illuminate\Database\Eloquent\Model>|list<class-string<\Illuminate\Database\Eloquent\Model>>|null  $models */
+    /** @param  class-string<Model>|list<class-string<Model>>|null  $models */
     public static function fake(string|array|null $models = null): AuditFake
     {
         config([

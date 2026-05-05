@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use SSIPG\Auditable\Formatters\JsonFormatter;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -91,5 +93,5 @@ return [
     | Default: JsonFormatter (clean JSON output)
     |
     */
-    'formatter' => SSIPG\Auditable\Formatters\JsonFormatter::class,
+    'formatter' => JsonFormatter::class,
 ];

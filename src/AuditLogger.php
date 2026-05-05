@@ -100,11 +100,11 @@ class AuditLogger
         $castType = strtolower($castType);
 
         return match ($castType) {
-            'bool', 'boolean' => (bool) $value,
-            'int', 'integer' => (int) $value,
+            'bool', 'boolean'         => (bool) $value,
+            'int', 'integer'          => (int) $value,
             'float', 'double', 'real' => (float) $value,
-            'string' => (string) $value,
-            'array', 'json' => is_string($value)
+            'string'                  => (string) $value,
+            'array', 'json'           => is_string($value)
                 ? json_decode($value, true, 512, JSON_THROW_ON_ERROR)
                 : $value,
             default => $value,
